@@ -543,4 +543,3 @@ if __name__ == "__main__":
     # The default bind stays loopback-only.
     a = p.parse_args()
     run(a.host, a.port, a.scenario, a.password, a.verbose, a.shareidx_bytes, a.shareidx_output)
-
