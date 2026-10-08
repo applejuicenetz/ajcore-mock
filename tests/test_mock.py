@@ -21,6 +21,11 @@ class MockTests(unittest.TestCase):
         self.assertNotIn('chimera', state.server_xml().lower())
         self.assertNotIn('apple-deluxe', state.server_xml().lower())
 
+    def test_share_object_lookup(self):
+        state = State('busy', EMPTY_PASSWORD_MD5)
+        share_id = next(iter(state.shares))
+        self.assertIn(f'id="{share_id}"', state.share_row(state.shares[share_id]))
+
     def test_actions(self):
         state = State('busy', EMPTY_PASSWORD_MD5)
         state.action('pausedownload', {'id': ['105']})
