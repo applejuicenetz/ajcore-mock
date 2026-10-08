@@ -40,6 +40,9 @@ def attrs(**values) -> str:
     return " ".join(f"{k}={quoteattr(str(v))}" for k, v in values.items())
 
 
+SEARCH_RESULT_INTERVAL = 3.0  # seconds between synthetic results of a running search
+SEARCH_RESULTS = 4  # results a running search delivers before it finishes
+
 class State:
     """Core state. Protect all access with self.lock."""
 
@@ -181,8 +184,12 @@ class State:
 
     def add_search(self, text, running=True, results=()):
         sid = self.new_id()
-        self.searches[sid] = {"id": sid, "text": text, "open": 1 if running else 0,
-                              "sum": 3, "running": "true" if running else "false"}
+        self.searches[sid] = {"id": sid, "text": text, "open": SEARCH_RESULTS if running else 0,
+                              "sum": 0 if running else SEARCH_RESULTS, "running": "true" if running else "false"}
+        if running:
+            # Running searches receive synthetic results over time, see State.advance_searches.
+            self.searches[sid]["started"] = time.time()
+            self.searches[sid]["delivered"] = 0
         for name, size, names in results:
             eid = self.new_id()
             self.entries[eid] = {"id": eid, "searchid": sid, "size": size,
@@ -191,10 +198,31 @@ class State:
         return sid
 
     # ---- Simulation ------------------------------------------------------
+    def advance_searches(self, now):
+        """Deliver one synthetic result per SEARCH_RESULT_INTERVAL; finish after SEARCH_RESULTS results."""
+        for s in self.searches.values():
+            if s["running"] != "true":
+                continue
+            due = min(SEARCH_RESULTS, int((now - s["started"]) / SEARCH_RESULT_INTERVAL))
+            for n in range(s["delivered"] + 1, due + 1):
+                name = f"{s['text']}-result-{n}.iso"
+                eid = self.new_id()
+                self.entries[eid] = {"id": eid, "searchid": s["id"], "size": 1_000_000 * n,
+                                     "checksum": hashlib.md5(f"{s['id']}:{name}".encode()).hexdigest(),
+                                     "names": [(name, n)]}
+            s["delivered"] = due
+            s["found"] = due
+            s["sum"] = due
+            s["open"] = SEARCH_RESULTS - due
+            if due >= SEARCH_RESULTS:
+                s["running"] = "false"
+                s["open"] = 0
+
     def tick(self):
         now = time.time()
         dt = now - self.last_tick
         self.last_tick = now
+        self.advance_searches(now)
         for d in self.downloads.values():
             if d["status"] != 0:
                 continue

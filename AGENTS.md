@@ -13,6 +13,11 @@
 - Current reference: https://github.com/applejuicenetz/core-src/blob/main/docs/openapi.yaml (local sibling: `../core-src/docs/openapi.yaml`). Do not modify core-src as part of mock changes.
 - Supported endpoints are implemented in `Handler.route`; unsupported operations are not proof of full Core compatibility. Add contract and regression tests with behavior changes.
 
+## Searches
+
+- Finished fixture searches (`debian`) never change. A search started through the API is running and delivers one synthetic result every `SEARCH_RESULT_INTERVAL` seconds (3 s) until `SEARCH_RESULTS` (4) results exist. Then it finishes and `opensearches` is 0. `cancelsearch` stops delivery.
+- Progress is driven by wall-clock time in `State.advance_searches`, called from `tick`. Tests move `started` into the past instead of sleeping.
+
 ## Share index
 
 - `share_index.py` generates a deterministic Core-style `<database><file ...><subhash .../></file></database>` fixture, using the on-disk format in `ScanShares.writeShareIndexXml`.
