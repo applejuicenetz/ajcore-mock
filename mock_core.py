@@ -296,10 +296,12 @@ class State:
         shares = "".join(f'<directory name="{n}" sharemode="{m}"/>' for n, m in self.share_dirs)
         return f"<settings>{body}<share>{shares}</share></settings>"
 
+    @staticmethod
+    def share_row(s):
+        return f"<share {attrs(id=s['id'], filename=s['filename'], shortfilename=s['short'], size=s['size'], checksum=s['checksum'], priority=s['priority'], lastasked=s['lastasked'], askcount=s['askcount'], searchcount=s['searchcount'])}/>"
+
     def share_xml(self):
-        rows = "\n".join(
-            f"<share {attrs(id=s['id'], filename=s['filename'], shortfilename=s['short'], size=s['size'], checksum=s['checksum'], priority=s['priority'], lastasked=s['lastasked'], askcount=s['askcount'], searchcount=s['searchcount'])}/>"
-            for s in self.shares.values())
+        rows = "\n".join(self.share_row(s) for s in self.shares.values())
         return f"<applejuice>\n<shares>\n{rows}\n</shares>\n</applejuice>"
 
     def partlist_xml(self, size: int, ready: int, active: list[tuple[int, int]]):
@@ -499,6 +501,8 @@ class Handler(BaseHTTPRequestHandler):
             return head + st.partlist_xml(d["size"], d["size"] // 2, []), "text/xml"
         if path == "/xml/getobject.xml":
             oid = int(q["id"][0])
+            if oid in st.shares:
+                return head + f"<applejuice>{st.share_row(st.shares[oid])}</applejuice>", "text/xml"
             for coll, fn in ((st.downloads, st.download_xml), (st.users, st.user_xml), (st.uploads, st.upload_xml)):
                 if oid in coll:
                     return head + f"<applejuice>{fn(coll[oid])}</applejuice>", "text/xml"
