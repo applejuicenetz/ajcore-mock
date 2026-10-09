@@ -29,7 +29,7 @@ EMPTY_PASSWORD_MD5 = hashlib.md5(b"").hexdigest()
 
 # Download states: 0 loading/searching, 14 complete, 17 canceled, 18 paused
 # Source states: 1 unqueried, 5 queued, 7 transferring
-# Upload states: 1 active, 2 queued
+# Upload states: 1 active, 2 queued, 5 connecting, 6 connecting indirectly, 7 cannot connect
 
 
 def now_ms() -> int:
@@ -149,10 +149,12 @@ class State:
         self.add_download("fertig.tar.gz", 8_000_000, ready=8_000_000, status=14)
         self.add_download("suchend.bin", 99_000_000, ready=0, sources=[])
         for i, (nick, status, speed) in enumerate([("alice", 1, 180_000), ("gerd", 2, 0),
-                                                   ("heidi", 2, 0), ("ivan", 2, 0)]):
+                                                   ("heidi", 2, 0), ("ivan", 2, 0),
+                                                   ("judy", 5, 0), ("karl", 6, 0), ("lena", 7, 0)]):
             uid = self.new_id()
             sid = self.new_id()
-            fname = ["debian-13.7.0-amd64-netinst.iso", "ajcore.jar", "linux.iso", "movie.mkv"][i]
+            fname = ["debian-13.7.0-amd64-netinst.iso", "ajcore.jar", "linux.iso", "movie.mkv",
+                     "verbinde.bin", "indirekt.bin", "fehler.bin"][i]
             self.shares[sid] = {"id": sid, "filename": f"/mock/incoming/{fname}", "short": fname,
                                 "size": 100_000_000 * (i + 1), "checksum": hashlib.md5(fname.encode()).hexdigest(),
                                 "priority": 1, "lastasked": now_ms() - 60_000, "askcount": i, "searchcount": i * 2}
@@ -243,6 +245,26 @@ class State:
         if added and (self.ISO_ROOT, "subdirectory") not in self.share_dirs:
             self.share_dirs.append((self.ISO_ROOT, "subdirectory"))
         return added
+
+    BIG_DIR = "/mock/archive"
+
+    def add_big_directory(self, count: int = 450) -> int:
+        """Add a flat directory larger than one client page; one upload targets a late entry."""
+        last = 0
+        for n in range(count):
+            name = f"bulk-{n:04d}.dat"
+            digest = hashlib.md5(name.encode()).digest()
+            sid = self.new_id()
+            self.shares[sid] = {"id": sid, "filename": f"{self.BIG_DIR}/{name}", "short": name, "size": 1_000_000 + n,
+                                "checksum": digest.hex(), "priority": 1, "lastasked": 0, "askcount": 0, "searchcount": 0}
+            last = sid
+        uid = self.new_id()
+        self.uploads[uid] = {"id": uid, "shareid": last, "version": "0.35.185.93", "os": 1, "status": 2, "directstate": 1,
+                             "priority": 50, "nick": "mona", "from": 0, "pos": 0, "to": 1_000_000,
+                             "lastconnection": now_ms(), "speed": 0, "loaded": 0}
+        if (self.BIG_DIR, "subdirectory") not in self.share_dirs:
+            self.share_dirs.append((self.BIG_DIR, "subdirectory"))
+        return count
 
     def scenario_firewalled(self):
         self.scenario_busy()
@@ -675,6 +697,8 @@ def run(host: str, port: int, scenario: str, password: str | None, verbose: bool
     # ISOs are added after the index fixture: real ISO sizes would need tens of MB of subhashes.
     if scenario != 'empty':
         state.add_iso_catalog(iso_count)
+        if scenario == 'busy':
+            state.add_big_directory()
     print(json.dumps({'shareidx_bytes': len(index) if index else 0, 'shares': len(state.shares), 'share_api_bytes': len(state.share_xml().encode())}), flush=True)
     Handler.state = state
     del index  # Release the generated disk-index fixture after startup.

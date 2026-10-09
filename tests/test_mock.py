@@ -15,6 +15,18 @@ class MockTests(unittest.TestCase):
         self.assertTrue(files[0].findall('subhash'))
         print(f'index={len(index)} bytes; shares={len(shares)}; API={len(state.share_xml().encode())} bytes')
 
+    def test_busy_uploads_cover_every_status(self):
+        state = State('busy', EMPTY_PASSWORD_MD5)
+        statuses = {int(u.get('status')) for u in ET.fromstring('<r>' + ''.join(state.upload_xml(u) for u in state.uploads.values()) + '</r>')}
+        self.assertEqual(statuses, {1, 2, 5, 6, 7})
+
+    def test_big_directory_has_upload_on_late_entry(self):
+        state = State('busy', EMPTY_PASSWORD_MD5)
+        state.add_big_directory(450)
+        in_dir = [x for x in state.shares.values() if x['filename'].startswith(state.BIG_DIR + '/')]
+        self.assertEqual(len(in_dir), 450)
+        self.assertTrue(any(state.shares[u['shareid']]['filename'].startswith(state.BIG_DIR) for u in state.uploads.values()))
+
     def test_settings_escape_special_characters(self):
         state = State('busy', EMPTY_PASSWORD_MD5)
         name = '/mock/Ä & "quoted" <folder>'
