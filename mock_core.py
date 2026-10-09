@@ -525,7 +525,7 @@ class State:
                 if self.connected_server == i:
                     self.connected_server = -1
         elif name == "processlink":
-            return self.process_link(q.get("link", [""])[0])
+            return self.process_link(q.get("link", [""])[0], q.get("subdir", [None])[0])
         elif name == "setsettings":
             lowered = {k.lower(): v[0] for k, v in q.items() if k.lower() != "password"}
             if "nickname" in lowered:
@@ -561,10 +561,13 @@ class State:
             return f"failure: unknown function {name}"
         return "ok"
 
-    def process_link(self, link: str) -> str:
+    def process_link(self, link: str, subdir: str | None = None) -> str:
         parts = link.removeprefix("ajfsp://").rstrip("/").split("|")
         if parts[0] == "file" and len(parts) >= 4:
-            self.add_download(parts[1], int(parts[3]), md5=parts[2], sources=[(5, 0, "linked")])
+            target = ""
+            if subdir is not None and ".." not in subdir and ":" not in subdir:
+                target = subdir  # Download.setTargetDirectory silently ignores values with ".." or ":".
+            self.add_download(parts[1], int(parts[3]), md5=parts[2], target=target, sources=[(5, 0, "linked")])
             return "ok"
         if parts[0] == "server" and len(parts) >= 3:
             self.add_server("", parts[1], int(parts[2]))
