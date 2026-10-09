@@ -33,6 +33,8 @@ Index als Datei erzeugen:
 python3 mock_core.py --shareidx-output runtime/shareidx.xml
 ```
 
+Zusätzlich liegen im Szenario `busy` bis zu 300 synthetische ISO-Dateien (Ubuntu, Debian, Fedora, Arch und weitere) unter `/mock/isos/<Distribution>/<Release>/`; das Verzeichnis ist mit Unterverzeichnissen freigegeben und über `directory.xml` browsbar. Anzahl mit `--iso-count N` ändern, `0` schaltet sie ab. Sie werden unabhängig von `--shareidx-bytes` angelegt und sind nicht im erzeugten Index enthalten.
+
 Dateiinhalte werden nicht erzeugt. Die Prüfsummen sind deterministische Testwerte, keine Prüfsummen real vorhandener Dateien.
 
 ## Sicherheit
