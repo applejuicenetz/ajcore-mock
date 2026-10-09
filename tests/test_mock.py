@@ -81,6 +81,15 @@ class MockTests(unittest.TestCase):
         state.action('setsettings', {'Nickname': ['x'], 'MaxUpload': ['5']})
         self.assertEqual((state.settings['nick'], state.settings['maxupload']), ('x', '5'))
 
+    def test_processlink_target_directory_like_core(self):
+        state = State('empty', EMPTY_PASSWORD_MD5)
+        link = 'ajfsp://file|a.iso|' + 'a' * 32 + '|10/'
+        state.action('processlink', {'link': [link], 'subdir': ['Linux/ISOs']})
+        state.action('processlink', {'link': [link.replace('a.iso', 'b.iso')], 'subdir': ['../x']})
+        state.action('processlink', {'link': [link.replace('a.iso', 'c.iso')]})
+        targets = {d['filename']: d['targetdirectory'] for d in state.downloads.values()}
+        self.assertEqual(targets, {'a.iso': 'Linux/ISOs', 'b.iso': '', 'c.iso': ''})
+
     def test_synthetic_servers(self):
         state = State('busy', EMPTY_PASSWORD_MD5)
         self.assertTrue(all(s['host'].endswith('.example') for s in state.servers.values()))
