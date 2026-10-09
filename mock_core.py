@@ -20,7 +20,7 @@ import threading
 import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from xml.sax.saxutils import quoteattr
+from xml.sax.saxutils import escape, quoteattr
 from pathlib import Path
 from share_index import DEFAULT_INDEX_BYTES, populate, write
 
@@ -172,6 +172,78 @@ class State:
         ])
         self.firewalled = "true"
 
+    ISO_ROOT = "/mock/isos"
+    ISO_DISTROS = {
+        "ubuntu": (["20.04.6", "22.04.5", "24.04.3", "25.04", "25.10"],
+                   ["desktop-amd64", "live-server-amd64", "live-server-arm64", "desktop-arm64"]),
+        "debian": (["11.11.0", "12.12.0", "13.7.0"],
+                   ["amd64-netinst", "amd64-DVD-1", "arm64-netinst", "i386-netinst", "amd64-xfce-live"]),
+        "fedora": (["41-1.4", "42-1.1", "43-1.6"], ["Workstation-x86_64", "Server-x86_64", "KDE-x86_64", "Everything-aarch64"]),
+        "archlinux": (["2025.06.01", "2025.09.01", "2025.12.01"], ["x86_64", "aarch64"]),
+        "linuxmint": (["21.3", "22", "22.1"], ["cinnamon-64bit", "mate-64bit", "xfce-64bit"]),
+        "opensuse": (["leap-15.6", "leap-16.0", "tumbleweed"], ["DVD-x86_64", "NET-x86_64", "Live-KDE-x86_64"]),
+        "almalinux": (["8.10", "9.6", "10.0"], ["x86_64-dvd", "x86_64-boot", "x86_64-minimal"]),
+        "rockylinux": (["8.10", "9.6", "10.0"], ["x86_64-dvd", "x86_64-boot", "x86_64-minimal"]),
+        "manjaro": (["24.2", "25.0"], ["kde", "gnome", "xfce"]),
+        "kali": (["2025.2", "2025.3", "2025.4"], ["installer-amd64", "live-amd64", "netinst-amd64"]),
+        "popos": (["22.04", "24.04"], ["amd64-intel", "amd64-nvidia"]),
+        "gentoo": (["20250601", "20250901", "20251130"], ["install-amd64-minimal", "livegui-amd64"]),
+        "freebsd": (["13.5", "14.3", "15.0"], ["amd64-disc1", "amd64-dvd1", "arm64-aarch64-disc1"]),
+        "alpine": (["3.20.8", "3.21.5", "3.22.2"], ["standard-x86_64", "extended-x86_64", "virt-aarch64"]),
+        "nixos": (["24.11", "25.05"], ["gnome-x86_64", "minimal-x86_64", "plasma6-x86_64"]),
+        "zorin": (["17.3", "18"], ["Core-64-bit", "Lite-64-bit"]),
+        "centos-stream": (["9", "10"], ["x86_64-dvd1", "x86_64-boot", "aarch64-dvd1", "ppc64le-dvd1"]),
+        "oraclelinux": (["8.10", "9.6", "10.0"], ["x86_64-dvd", "x86_64-boot", "aarch64-dvd"]),
+        "elementary": (["7.1", "8.0", "8.1"], ["amd64", "amd64-nvidia"]),
+        "endeavouros": (["2025.03.19", "2025.06.14", "2025.11.24"], ["x86_64", "aarch64"]),
+        "mxlinux": (["23.6", "25"], ["x64", "ahs-x64", "fluxbox-x64"]),
+        "void": (["20250202", "20250616"], ["x86_64-live", "x86_64-musl-live", "aarch64-live"]),
+        "tails": (["6.14", "6.17", "7.0"], ["amd64"]),
+        "slackware": (["15.0", "current"], ["install-dvd", "install-dvd-aarch64"]),
+        "truenas": (["24.10", "25.04"], ["scale", "core"]),
+        "proxmox": (["8.4", "9.0"], ["ve", "backup-server", "mail-gateway"]),
+        "qubes": (["4.2.4", "4.3"], ["x86_64"]),
+        "rhel-ubi": (["9.6", "10.0"], ["x86_64-dvd", "aarch64-dvd"]),
+        "ubuntu-mate": (["22.04", "24.04", "25.04"], ["desktop-amd64", "desktop-arm64"]),
+        "kubuntu": (["22.04", "24.04", "25.04"], ["desktop-amd64"]),
+        "xubuntu": (["22.04", "24.04", "25.04"], ["desktop-amd64", "minimal-amd64"]),
+        "lubuntu": (["22.04", "24.04", "25.04"], ["desktop-amd64", "desktop-arm64"]),
+        "debian-edu": (["12.12.0", "13.7.0"], ["amd64-netinst", "amd64-BD-1"]),
+        "ubuntu-budgie": (["22.04", "24.04", "25.04"], ["desktop-amd64"]),
+        "ubuntu-studio": (["22.04", "24.04", "25.04"], ["dvd-amd64"]),
+        "ubuntu-server": (["22.04.5", "24.04.3"], ["live-amd64", "live-arm64", "live-s390x", "live-ppc64el"]),
+        "raspios": (["2025-05-13", "2025-10-01"], ["arm64-lite", "arm64-desktop", "armhf-lite"]),
+        "clonezilla": (["3.2.1", "3.2.2", "3.3.0"], ["amd64", "i686"]),
+        "gparted": (["1.6.0", "1.7.0"], ["amd64", "i686", "arm64"]),
+        "memtest86plus": (["7.00", "7.20"], ["x64", "x86"]),
+        "systemrescue": (["11.03", "12.00", "12.02"], ["amd64", "i686"]),
+        "opnsense": (["24.7", "25.1", "25.7"], ["dvd-amd64", "vga-amd64", "nano-amd64"]),
+        "pfsense": (["2.7.2", "2.8.0", "2.8.1"], ["CE-amd64"]),
+        "netbsd": (["10.0", "10.1"], ["amd64", "evbarm-aarch64", "i386"]),
+        "openbsd": (["7.6", "7.7", "7.8"], ["install-amd64", "install-arm64"]),
+    }
+
+    def add_iso_catalog(self, count: int = 300) -> int:
+        """Add deterministic ISO shares below ISO_ROOT/<distribution>/<release>/ and share the root recursively."""
+        names = []
+        for distro, (releases, flavours) in self.ISO_DISTROS.items():
+            for release in releases:
+                for flavour in flavours:
+                    names.append((distro, release, f"{distro}-{release}-{flavour}.iso"))
+        names.sort(key=lambda n: hashlib.md5("/".join(n).encode()).hexdigest())  # Deterministic mixed order.
+        added = 0
+        for distro, release, name in names[:count]:
+            digest = hashlib.md5(name.encode()).digest()
+            size = (400 + int.from_bytes(digest[:3], "big") % 4200) * 1_000_000
+            sid = self.new_id()
+            self.shares[sid] = {"id": sid, "filename": f"{self.ISO_ROOT}/{distro}/{release}/{name}", "short": name,
+                                "size": size, "checksum": digest.hex(), "priority": 1 + digest[3] % 4,
+                                "lastasked": 0, "askcount": digest[4] % 40, "searchcount": digest[5] % 25}
+            added += 1
+        if added and (self.ISO_ROOT, "subdirectory") not in self.share_dirs:
+            self.share_dirs.append((self.ISO_ROOT, "subdirectory"))
+        return added
+
     def scenario_firewalled(self):
         self.scenario_busy()
         self.firewalled = "true"
@@ -320,8 +392,8 @@ class State:
 
     def settings_xml(self):
         s = self.settings
-        body = "".join(f"<{k}>{v}</{k}>" for k, v in s.items())
-        shares = "".join(f'<directory name="{n}" sharemode="{m}"/>' for n, m in self.share_dirs)
+        body = "".join(f"<{k}>{escape(str(v))}</{k}>" for k, v in s.items())
+        shares = "".join(f'<directory name={quoteattr(n)} sharemode={quoteattr(m)}/>' for n, m in self.share_dirs)
         return f"<settings>{body}<share>{shares}</share></settings>"
 
     @staticmethod
@@ -341,10 +413,23 @@ class State:
         rows = "\n".join(f'<part fromposition="{f}" type="{t}"/>' for f, t in parts)
         return f'<applejuice>\n<fileinformation filesize="{size}"/>\n{rows}\n</applejuice>'
 
-    def directory_xml(self, directory: str):
-        tree = {"/": ["mock", "home", "tmp"], "/mock": ["incoming", "temp"], "/home": ["user"]}
-        key = directory.rstrip("/") or "/"
-        dirs = "".join(f'<dir name="{n}" isfilesystem="false" type="1"/>' for n in tree.get(key, []))
+    def directory_xml(self, directory: str | None):
+        tree = {"/": ["mock", "home", "tmp"], "/mock": ["incoming", "isos", "temp"], "/home": ["user"]}
+        key = "/" if directory is None else (directory.rstrip("/") or "/")
+        prefix = self.ISO_ROOT + "/"
+        if key == self.ISO_ROOT or key.startswith(prefix):
+            depth = key[len(prefix):].count("/") + 1 if key != self.ISO_ROOT else 0
+            children = set()
+            for share in self.shares.values():
+                if share["filename"].startswith(prefix):
+                    parts = share["filename"][len(prefix):].split("/")[:-1]
+                    if key == self.ISO_ROOT and parts:
+                        children.add(parts[0])
+                    elif key != self.ISO_ROOT and parts[:depth] == key[len(prefix):].split("/") and len(parts) > depth:
+                        children.add(parts[depth])
+            tree[key] = sorted(children)
+        # Subfolders carry type 4 and no path, like XmlServer.handleDirectory; clients derive the path.
+        dirs = "".join(f'<dir name={quoteattr(n)} isfilesystem="true" type="4"/>' for n in tree.get(key, []))
         return f'<applejuice>\n<filesystem seperator="/"/>{dirs}</applejuice>'
 
     # ---- Actions --------------------------------------------------------
@@ -384,17 +469,43 @@ class State:
                 if i in self.downloads:
                     self.downloads[i]["filename"] = q.get("name", [""])[0]
         elif name == "settargetdir":
-            for i in ids:
-                if i in self.downloads:
-                    self.downloads[i]["targetdirectory"] = q.get("dir", [""])[0]
+            target = q.get("dir", [None])[0]
+            if target is None:
+                return "error: missing dir"
+            if ".." in target or ":" in target:  # XmlServer.handleSetTargetDir
+                return "error: invalid dir"
+            if not ids or ids[0] not in self.downloads:
+                return "error: invalid id"
+            self.downloads[ids[0]]["targetdirectory"] = target
         elif name == "setpowerdownload":
+            try:
+                level = int(next(iter(v[0] for k, v in q.items() if k.lower() == "powerdownload"), "0"))
+            except ValueError:
+                level = 0
+            results = []
             for i in ids:
                 if i in self.downloads:
-                    self.downloads[i]["powerdownload"] = int(float(q.get("Powerdownload", ["0"])[0]))
+                    self.downloads[i]["powerdownload"] = level
+                    results.append(f"ok: set to {level}")
+                else:
+                    results.append("error: invalid id")
+            return "".join(results)
         elif name == "setpriority":
+            try:
+                priority = int(q.get("priority", ["0"])[0])
+            except ValueError:
+                priority = 0
+            results = []
             for i in ids:
-                if i in self.shares:
-                    self.shares[i]["priority"] = int(q.get("priority", ["1"])[0])
+                share = self.shares.get(i)
+                if share is None:
+                    results.append("error: invalid id")
+                    continue
+                if 1 <= priority <= 250:  # Share.setPriority ignores other values.
+                    others = sum(o["priority"] for o in self.shares.values() if o is not share and o["priority"] > 1)
+                    share["priority"] = max(1, 1000 - others) if others + priority > 1000 else priority
+                results.append(f"ok: set to {share['priority']}")
+            return "".join(results)
         elif name == "search":
             self.add_search(q.get("search", [""])[0], running=True)
         elif name == "cancelsearch":
@@ -416,21 +527,30 @@ class State:
         elif name == "processlink":
             return self.process_link(q.get("link", [""])[0])
         elif name == "setsettings":
-            for key, val in q.items():
-                if key == "password":
-                    continue
-                low = key.lower()
-                if low == 'nickname':
-                    low = 'nick'
-                if low in self.settings:
-                    self.settings[low] = val[0]
-            if 'countshares' in q:
-                self.share_dirs = [
-                    (q[f'sharedirectory{i}'][0], 'subdirectory' if q.get(f'sharesub{i}', ['false'])[0].lower() == 'true' else 'singledirectory')
-                    for i in range(1, int(q['countshares'][0]) + 1)
-                ]
-            if 'sharecheck' in q:
-                pass  # Acknowledge the request without scanning a real filesystem.
+            lowered = {k.lower(): v[0] for k, v in q.items() if k.lower() != "password"}
+            if "nickname" in lowered:
+                self.settings["nick"] = lowered["nickname"]
+            for key in self.settings:
+                if key != "nick" and key in lowered:
+                    self.settings[key] = lowered[key]
+            if "countshares" in lowered:
+                # Core clears the list, adds the incoming directory (sharemode 0), then walks N..1;
+                # entries lacking directory or sharesub are skipped, an existing path only changes its mode.
+                dirs: list[tuple[str, str]] = []
+
+                def add(path: str, mode: str) -> None:
+                    for index, (existing, _mode) in enumerate(dirs):
+                        if existing == path:
+                            dirs[index] = (path, mode)
+                            return
+                    dirs.append((path, mode))
+
+                add(self.settings["incomingdirectory"].rstrip("/") or "/", "subdirectory")
+                for n in range(int(lowered["countshares"]), 0, -1):
+                    path, sub = lowered.get(f"sharedirectory{n}"), lowered.get(f"sharesub{n}")
+                    if path is not None and sub is not None:
+                        add(path.rstrip("/") or "/", "subdirectory" if sub.lower() == "true" else "singledirectory")
+                self.share_dirs = dirs
         elif name == "setpassword":
             pass
         elif name in ("sharecheck", "stopsharecheck"):
@@ -515,7 +635,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/xml/share.xml":
             return head + st.share_xml(), "text/xml"
         if path == "/xml/directory.xml":
-            return head + st.directory_xml(q.get("directory", ["/"])[0]), "text/xml"
+            return head + st.directory_xml(q.get("directory", [None])[0]), "text/xml"
         if path == "/xml/modified.xml":
             filters = {f.strip().lower() for f in q.get("filter", [""])[0].split(";") if f.strip()}
             return head + st.modified_xml(filters), "text/xml"
@@ -540,7 +660,7 @@ class Handler(BaseHTTPRequestHandler):
         raise KeyError(f"unknown path {path}")
 
 
-def run(host: str, port: int, scenario: str, password: str | None, verbose: bool, shareidx_bytes: int = DEFAULT_INDEX_BYTES, shareidx_output: Path | None = None):
+def run(host: str, port: int, scenario: str, password: str | None, verbose: bool, shareidx_bytes: int = DEFAULT_INDEX_BYTES, shareidx_output: Path | None = None, iso_count: int = 300):
     """Start a synthetic HTTP/XML Core service for any API client."""
     # Fixtures never connect to external servers.
     md5 = EMPTY_PASSWORD_MD5 if password is None else hashlib.md5(password.encode()).hexdigest()
@@ -549,6 +669,9 @@ def run(host: str, port: int, scenario: str, password: str | None, verbose: bool
     index = populate(state, shareidx_bytes) if shareidx_bytes else None
     if index is not None and shareidx_output is not None:
         write(shareidx_output, index)
+    # ISOs are added after the index fixture: real ISO sizes would need tens of MB of subhashes.
+    if scenario != 'empty':
+        state.add_iso_catalog(iso_count)
     print(json.dumps({'shareidx_bytes': len(index) if index else 0, 'shares': len(state.shares), 'share_api_bytes': len(state.share_xml().encode())}), flush=True)
     Handler.state = state
     del index  # Release the generated disk-index fixture after startup.
@@ -570,8 +693,9 @@ if __name__ == "__main__":
     p.add_argument("--scenario", default="busy", choices=["empty", "busy", "firewalled", "disconnected"])
     p.add_argument("--password", default=None, help="Plain text; default: empty")
     p.add_argument("--shareidx-bytes", type=int, default=DEFAULT_INDEX_BYTES, help="Synthetic index size in bytes; 0 disables additional shares")
+    p.add_argument("--iso-count", type=int, default=300, help="Number of ISO files shared below /mock/isos in folders per distribution and release; 0 disables")
     p.add_argument("--shareidx-output", type=Path, help="Optional generated shareidx.xml output path")
     p.add_argument("-v", "--verbose", action="store_true")
     # The default bind stays loopback-only.
     a = p.parse_args()
-    run(a.host, a.port, a.scenario, a.password, a.verbose, a.shareidx_bytes, a.shareidx_output)
+    run(a.host, a.port, a.scenario, a.password, a.verbose, a.shareidx_bytes, a.shareidx_output, a.iso_count)
