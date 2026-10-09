@@ -6,9 +6,9 @@ shares, directories, downloads, uploads, searches and state-changing functions.
 No connections to real Core instances or P2P servers are made.
 
 Examples:
-    python3 mock_core.py
-    python3 mock_core.py --scenario empty --shareidx-bytes 0
-    python3 mock_core.py --password test --shareidx-output runtime/shareidx.xml
+    python3 src/mock_core.py
+    python3 src/mock_core.py --scenario empty --shareidx-bytes 0
+    python3 src/mock_core.py --password test --shareidx-output runtime/shareidx.xml
 """
 
 from __future__ import annotations

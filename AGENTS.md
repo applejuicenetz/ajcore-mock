@@ -19,7 +19,7 @@
 
 ## Share index
 
-- `share_index.py` generates a deterministic Core-style `<database><file ...><subhash .../></file></database>` fixture, using the on-disk format in `ScanShares.writeShareIndexXml`.
+- `src/share_index.py` generates a deterministic Core-style `<database><file ...><subhash .../></file></database>` fixture, using the on-disk format in `ScanShares.writeShareIndexXml`.
 - Default target: 3,500,000 bytes (decimal MB). Small trailing whitespace padding gives an exact byte count; document it rather than treating padding as additional metadata.
 - Index records and `/xml/share.xml` refer to the same synthetic shares. Subhashes appear only in the index, not the HTTP API. Hashes do not represent real files.
 - Generated indexes go under ignored `runtime/` or a user-selected output path. Do not commit large generated fixtures.
@@ -27,8 +27,8 @@
 ## Verification
 
 ```sh
-python3 -m unittest discover -s tests -v
-python3 mock_core.py --help
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+python3 src/mock_core.py --help
 ```
 
 The service defaults to loopback-only port 19851, empty password and in-memory state. Startup can export the generated index with `--shareidx-output`. Restart resets state.

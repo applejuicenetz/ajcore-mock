@@ -1,47 +1,36 @@
 # appleJuice Core Mock
 
-Lokaler Testdienst für Anwendungen, die die HTTP/XML-API des appleJuice Core verwenden. Der Mock liefert synthetische Downloads, Uploads, Freigaben, Suchergebnisse und Server. Er verbindet sich mit keinem echten Filesharing-Netzwerk und überträgt keine Dateien.
+Lokaler Testdienst für Anwendungen, die die HTTP/XML-API des appleJuice Core nutzen. Liefert synthetische Downloads, Uploads, Freigaben, Suchergebnisse und Server. Keine Verbindung zu echten Netzwerken, keine Dateiübertragung.
 
 ## Start
 
-Benötigt wird Python 3.12 oder neuer. Keine zusätzlichen Pakete nötig.
+Python 3.12+, keine zusätzlichen Pakete.
 
 ```sh
-python3 mock_core.py
+python3 src/mock_core.py
 ```
 
-Core-Adresse im Client: `http://127.0.0.1:19851`. Passwort leer lassen.
+Core-Adresse im Client: `http://127.0.0.1:19851`, Passwort leer. Ein Neustart setzt den Zustand zurück.
 
-Aktionen ändern den Zustand des Mocks; aktive Downloads schreiten mit der Zeit voran. Ein Neustart setzt die Daten zurück.
-
-## Szenarien und Optionen
+Docker:
 
 ```sh
-python3 mock_core.py --scenario busy
-python3 mock_core.py --scenario empty --shareidx-bytes 0
-python3 mock_core.py --scenario disconnected
-python3 mock_core.py --port 19852 --password test
+docker run --rm -p 127.0.0.1:19851:19851 ghcr.io/applejuicenetz/ajcore-mock:latest
 ```
 
-Szenarien: `busy`, `empty`, `firewalled`, `disconnected`. Mit `--shareidx-bytes 0` entfallen die zusätzlichen Katalogdateien. `--help` zeigt alle Optionen.
-
-Standardmäßig wird ein synthetischer Share-Index von **3.500.000 Bytes (3,5 MB)** modelliert. Die darin enthaltenen Dateimetadaten stehen über `/xml/share.xml` bereit. Der Index enthält zusätzlich Subhashes; die API-Antwort ist deshalb deutlich kleiner als die Indexdatei.
-
-Index als Datei erzeugen:
+## Optionen
 
 ```sh
-python3 mock_core.py --shareidx-output runtime/shareidx.xml
+python3 src/mock_core.py --scenario busy          # busy, empty, firewalled, disconnected
+python3 src/mock_core.py --port 19852 --password test
+python3 src/mock_core.py --shareidx-bytes 0       # keine zusätzlichen Katalogdateien
+python3 src/mock_core.py --iso-count 0            # keine synthetischen ISOs
+python3 src/mock_core.py --shareidx-output runtime/shareidx.xml
 ```
 
-Zusätzlich liegen im Szenario `busy` bis zu 300 synthetische ISO-Dateien (Ubuntu, Debian, Fedora, Arch und weitere) unter `/mock/isos/<Distribution>/<Release>/`; das Verzeichnis ist mit Unterverzeichnissen freigegeben und über `directory.xml` browsbar. Anzahl mit `--iso-count N` ändern, `0` schaltet sie ab. Sie werden unabhängig von `--shareidx-bytes` angelegt und sind nicht im erzeugten Index enthalten.
-
-Dateiinhalte werden nicht erzeugt. Die Prüfsummen sind deterministische Testwerte, keine Prüfsummen real vorhandener Dateien.
+`--help` zeigt alle Optionen. Prüfsummen und Share-Index (Standard 3,5 MB) sind deterministische Testwerte, Dateiinhalte werden nicht erzeugt.
 
 ## Sicherheit
 
-Der Dienst ist nur für Tests gedacht. Er lauscht standardmäßig ausschließlich auf `127.0.0.1`. Nicht öffentlich betreiben und keine echten Zugangsdaten verwenden. Alle vorgegebenen Serveradressen sind reservierte `.example`-Adressen.
-
-## API-Dokumentation
-
-Ein separates **OpenAPI-Repository von appleJuiceNETZ ist geplant**. Dessen endgültiger Repositoryname und URL stehen noch nicht fest; ein konkreter Link wird ergänzt, sobald es angelegt ist.
+Nur für Tests. Lauscht standardmäßig nur auf `127.0.0.1`, nicht öffentlich betreiben. Serveradressen sind reservierte `.example`-Adressen.
 
