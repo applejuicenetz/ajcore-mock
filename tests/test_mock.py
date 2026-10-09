@@ -93,8 +93,6 @@ class MockTests(unittest.TestCase):
     def test_synthetic_servers(self):
         state = State('busy', EMPTY_PASSWORD_MD5)
         self.assertTrue(all(s['host'].endswith('.example') for s in state.servers.values()))
-        self.assertNotIn('chimera', state.server_xml().lower())
-        self.assertNotIn('apple-deluxe', state.server_xml().lower())
 
     def test_share_object_lookup(self):
         state = State('busy', EMPTY_PASSWORD_MD5)

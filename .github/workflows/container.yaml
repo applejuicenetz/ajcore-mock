@@ -1,4 +1,4 @@
-name: Docker
+name: Container
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: docker-${{ github.ref }}
+  group: container-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
