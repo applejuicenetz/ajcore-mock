@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ajcore-mock" type="docker-deploy" factoryName="dockerfile" server-name="localhost">
+    <deployment type="dockerfile">
+      <settings>
+        <option name="imageTag" value="applejuicenetz/ajcore-mock:dev" />
+        <option name="containerName" value="ajcore-mock" />
+        <option name="portBindings">
+          <list>
+            <DockerPortBindingImpl>
+              <option name="containerPort" value="19851" />
+              <option name="hostPort" value="19851" />
+            </DockerPortBindingImpl>
+          </list>
+        </option>
+        <option name="showCommandPreview" value="true" />
+        <option name="sourceFilePath" value="Dockerfile" />
+      </settings>
+    </deployment>
+    <method v="2" />
+  </configuration>
+</component>
