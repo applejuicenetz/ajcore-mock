@@ -1,9 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ajcore-mock" type="docker-deploy" factoryName="dockerfile" server-name="localhost">
+  <configuration default="false" name="core-mock" type="docker-deploy" factoryName="dockerfile" server-name="localhost">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="applejuicenetz/ajcore-mock:dev" />
-        <option name="containerName" value="ajcore-mock" />
+        <option name="imageTag" value="applejuicenetz/core-mock:dev" />
+        <option name="containerName" value="core-mock" />
         <option name="portBindings">
           <list>
             <DockerPortBindingImpl>

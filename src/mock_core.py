@@ -981,7 +981,7 @@ class State:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "ajcore-mock"
+    server_version = "core-mock"
     state: State
 
     def version_string(self):

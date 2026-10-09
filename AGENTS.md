@@ -1,4 +1,4 @@
-# ajcore-mock
+# core-mock
 
 ## Scope
 
@@ -43,4 +43,4 @@ The service defaults to loopback-only port 19851, empty password and in-memory s
 
 ## GitHub
 
-Repository: `applejuicenetz/ajcore-mock`. Inspect status before changes; no unrelated files or credentials in commits. Publishing requires explicit user authorization.
+Repository: `applejuicenetz/core-mock`. Inspect status before changes; no unrelated files or credentials in commits. Publishing requires explicit user authorization.

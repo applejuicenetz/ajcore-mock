@@ -15,7 +15,7 @@ Core-Adresse im Client: `http://127.0.0.1:19851`, Passwort leer. Ein Neustart se
 Docker:
 
 ```sh
-docker run --rm -p 127.0.0.1:19851:19851 ghcr.io/applejuicenetz/ajcore-mock:latest
+docker run --rm -p 127.0.0.1:19851:19851 ghcr.io/applejuicenetz/core-mock:latest
 ```
 
 ## Optionen
